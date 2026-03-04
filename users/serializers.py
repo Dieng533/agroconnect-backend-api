@@ -1,6 +1,6 @@
+# serializers.py
 from rest_framework import serializers
 from .models import User
-
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -13,7 +13,6 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         role = validated_data.get('role')
-
         if role == 'admin':
             raise serializers.ValidationError(
                 "La création d'un compte administrateur n'est pas autorisée."
@@ -25,11 +24,14 @@ class RegisterSerializer(serializers.ModelSerializer):
             username=validated_data['username'],
             role=role
         )
-
         return user
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    # 🔹 Champ "name" pour Flutter
+    name = serializers.CharField(source='username', read_only=True)
+
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'role']
+        # Assurez-vous que `name` est bien déclaré avant dans le serializer
+        fields = ['id', 'name', 'username', 'email', 'role']

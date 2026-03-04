@@ -1,9 +1,21 @@
 from django.urls import path
-from .views import ProductListCreateView, OrderCreateView
-from .views import ProductListCreateView, OrderCreateView, OrderUpdateStatusView
+from .views import (
+    ProductListCreateView,
+    ProductDetailView,
+    OrderListCreateView,
+    OrderDetailView,
+    FarmerListView,  
+)
 
 urlpatterns = [
-    path('products/', ProductListCreateView.as_view(), name='products'),
-    path('orders/', OrderCreateView.as_view(), name='orders'),
-    path('orders/<int:pk>/status/', OrderUpdateStatusView.as_view(), name='order-status'),
+    # Products
+    path('products/', ProductListCreateView.as_view(), name='product-list-create'),
+    path('products/<int:pk>/', ProductDetailView.as_view(), name='product-detail'),
+
+    # Orders
+    path('orders/', OrderListCreateView.as_view(), name='order-list-create'),
+    path('orders/<int:pk>/', OrderDetailView.as_view(), name='order-detail'),
+
+    # urls.py
+    path('farmers/', FarmerListView.as_view(), name='farmer-list'),
 ]

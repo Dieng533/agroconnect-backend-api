@@ -11,9 +11,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY
 # =========================
 
-SECRET_KEY = 'django-insecure-o)c51zk+zejyo%6v=m%3w^&oc+2yeqsluzl$p7m&2)0g*5y=b_'
+SECRET_KEY = "django-super-secure-key-very-long-2026-agroconnect-production-ready-123456" 
 DEBUG = True
-ALLOWED_HOSTS = ['*']   # Flutter Web compatible
+ALLOWED_HOSTS = ['*']
 
 # =========================
 # APPLICATIONS
@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'django_filters',
+    'drf_yasg',
 
     'django.contrib.admin',
     'django.contrib.auth',
@@ -40,7 +41,7 @@ INSTALLED_APPS = [
 # =========================
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',  # doit être en premier
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -91,25 +92,6 @@ DATABASES = {
 AUTH_USER_MODEL = 'users.User'
 
 # =========================
-# PASSWORD VALIDATION
-# =========================
-
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
-]
-
-# =========================
 # INTERNATIONALIZATION
 # =========================
 
@@ -122,7 +104,8 @@ USE_TZ = True
 # STATIC & MEDIA
 # =========================
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -148,23 +131,3 @@ REST_FRAMEWORK = {
 # =========================
 
 CORS_ALLOW_ALL_ORIGINS = True
-CORS_ALLOW_HEADERS = ['*']
-CORS_ALLOW_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
-
-
-
-import dj_database_url
-
-DEBUG = False
-
-ALLOWED_HOSTS = ['.onrender.com']
-
-DATABASES = {
-    'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL')
-    )
-}
-
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
-MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')

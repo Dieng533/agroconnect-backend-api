@@ -1,65 +1,97 @@
 from rest_framework import generics, permissions
-from rest_framework.exceptions import PermissionDenied
-from django.db import transaction
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.permissions import IsAuthenticated
+from django.contrib.auth import get_user_model
 
 from .models import Product, Order
-from .serializers import ProductSerializer, OrderSerializer
+from .serializers import ProductSerializer, OrderSerializer, UserSerializer
 
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters
+User = get_user_model()
 
 
-# ✅ Liste + Création produit
+# =====================================
+# PRODUITS
+# =====================================
 class ProductListCreateView(generics.ListCreateAPIView):
-    queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    permission_classes = [IsAuthenticated]
 
-    # Champs filtrables et recherchables
-    filterset_fields = ['category', 'farmer']   # ex: catégorie, farmer
-    search_fields = ['name', 'description']    # recherche par mot clé
-    ordering_fields = ['price', 'created_at']  # tri par prix ou date
-    
+    def get_queryset(self):
+        # Chaque vendeur voit uniquement SES produits
+        if self.request.user.role == 'farmer':
+            return Product.objects.filter(farmer=self.request.user)
+        # Les acheteurs voient tous les produits
+        return Product.objects.all()
 
-# ✅ Création commande
-class OrderCreateView(generics.CreateAPIView):
-    serializer_class = OrderSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    @transaction.atomic
     def perform_create(self, serializer):
-        user = self.request.user
+        # Produit automatiquement lié au vendeur connecté
+        serializer.save(farmer=self.request.user)
 
-        if user.user_type != 'buyer':
-            raise PermissionDenied("Seuls les buyers peuvent passer une commande.")
+    def get_serializer_context(self):
+        # 🔹 Essentiel pour construire l'URL complète des images
+        return {'request': self.request}
 
-        product = Product.objects.get(id=self.request.data.get('product'))
-        quantity = int(self.request.data.get('quantity'))
 
-        if quantity > product.quantity:
-            raise PermissionDenied("Stock insuffisant.")
+class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = ProductSerializer
+    permission_classes = [IsAuthenticated]
 
-        product.quantity -= quantity
-        product.save()
+    def get_queryset(self):
+        # Empêche modification/suppression d’un autre vendeur
+        if self.request.user.role == 'farmer':
+            return Product.objects.filter(farmer=self.request.user)
+        # Les acheteurs ne peuvent pas modifier
+        return Product.objects.none()
 
-        total_price = product.price * quantity
+    def get_serializer_context(self):
+        return {'request': self.request}
 
-        serializer.save(
-            buyer=user,
-            product=product,
-            quantity=quantity,
-            total_price=total_price
-        )
 
-class OrderUpdateStatusView(generics.UpdateAPIView):
-    queryset = Order.objects.all()
+# =====================================
+# COMMANDES
+# =====================================
+class OrderListCreateView(generics.ListCreateAPIView):
     serializer_class = OrderSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
-    def perform_update(self, serializer):
-        order = self.get_object()
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == "farmer":
+            # Toutes les commandes des produits du farmer
+            return Order.objects.filter(product__farmer=user)
+        else:
+            # Commandes passées par l'utilisateur (buyer)
+            return Order.objects.filter(buyer=user)
 
-        if self.request.user != order.product.farmer:
-            raise PermissionDenied("Seul le farmer peut modifier le statut.")
+    def perform_create(self, serializer):
+        serializer.save(buyer=self.request.user)
+        
 
-        serializer.save()
+class OrderDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == "farmer":
+            return Order.objects.filter(product__farmer=user)
+        else:
+            return Order.objects.filter(buyer=user)
+
+    def get_serializer_context(self):
+        return {'request': self.request}
+
+
+# =====================================
+# LISTE DES FARMERS
+# =====================================
+class FarmerListView(generics.ListAPIView):
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Tous les utilisateurs avec le rôle farmer
+        return User.objects.filter(role='seller')
+
+    def get_serializer_context(self):
+        return {'request': self.request}
