@@ -1,9 +1,9 @@
-﻿from django.db import models
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model
+from django.db import models
 
 from .models import Product, Order, Cart, Message, Culture, AgriculturalAdvice
 from .serializers import ProductSerializer, OrderSerializer, UserSerializer, CartSerializer, MessageSerializer, CultureSerializer, AgriculturalAdviceSerializer
@@ -20,17 +20,17 @@ class ProductListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         # Chaque vendeur voit uniquement SES produits
-        if self.request.user.role == 'farmer':
+        if self.request.user.role == 'seller':
             return Product.objects.filter(farmer=self.request.user)
         # Les acheteurs voient tous les produits
         return Product.objects.all()
 
     def perform_create(self, serializer):
-        # Produit automatiquement liÃ© au vendeur connectÃ©
+        # Produit automatiquement lie au vendeur connecte
         serializer.save(farmer=self.request.user)
 
     def get_serializer_context(self):
-        # ðŸ”¹ Essentiel pour construire l'URL complÃ¨te des images
+        # Essentiel pour construire l'URL complete des images
         return {'request': self.request}
 
 
@@ -39,8 +39,8 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        # EmpÃªche modification/suppression dâ€™un autre vendeur
-        if self.request.user.role == 'farmer':
+        # Empeche modification/suppression d'un autre vendeur
+        if self.request.user.role == 'seller':
             return Product.objects.filter(farmer=self.request.user)
         # Les acheteurs ne peuvent pas modifier
         return Product.objects.none()
@@ -58,11 +58,11 @@ class OrderListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.role == "farmer":
+        if user.role == "seller":
             # Toutes les commandes des produits du farmer
             return Order.objects.filter(product__farmer=user)
         else:
-            # Commandes passÃ©es par l'utilisateur (buyer)
+            # Commandes passees par l'utilisateur (buyer)
             return Order.objects.filter(buyer=user)
 
     def perform_create(self, serializer):
@@ -75,7 +75,7 @@ class OrderDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.role == "farmer":
+        if user.role == "seller":
             return Order.objects.filter(product__farmer=user)
         else:
             return Order.objects.filter(buyer=user)
@@ -95,7 +95,7 @@ class CartListView(generics.ListCreateAPIView):
         return Cart.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
-        # Ajouter ou mettre Ã  jour un produit dans le panier
+        # Ajouter ou mettre a jour un produit dans le panier
         product = serializer.validated_data['product']
         quantity = serializer.validated_data.get('quantity', 1)
         
@@ -129,7 +129,7 @@ class CartClearView(generics.DestroyAPIView):
 
     def delete(self, request, *args, **kwargs):
         Cart.objects.filter(user=request.user).delete()
-        return Response({'message': 'Panier vidÃ© avec succÃ¨s'}, status=status.HTTP_204_NO_CONTENT)
+        return Response({'message': 'Panier vide avec succes'}, status=status.HTTP_204_NO_CONTENT)
 
 
 # =====================================
@@ -161,7 +161,7 @@ class BulkOrderCreateView(generics.CreateAPIView):
             except Product.DoesNotExist:
                 continue
         
-        # Vider le panier aprÃ¨s commande
+        # Vider le panier apres commande
         Cart.objects.filter(user=request.user).delete()
         
         serializer = OrderSerializer(orders, many=True, context={'request': request})
@@ -176,11 +176,12 @@ class FarmerListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        # Tous les utilisateurs avec le rÃ´le farmer
+        # Tous les utilisateurs avec le role farmer
         return User.objects.filter(role='seller')
 
     def get_serializer_context(self):
         return {'request': self.request}
+
 
 # =====================================
 # MESSAGES
@@ -190,14 +191,14 @@ class MessageListView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        # Un utilisateur ne voit que ses messages (envoyés ou reçus)
+        # Un utilisateur ne voit que ses messages (envoyes ou recus)
         user = self.request.user
         return Message.objects.filter(
             models.Q(sender=user) | models.Q(receiver=user)
         ).distinct()
 
     def perform_create(self, serializer):
-        # L'expéditeur est automatiquement l'utilisateur connecté
+        # L'expediteur est automatiquement l'utilisateur connecte
         serializer.save(sender=self.request.user)
 
 
@@ -220,7 +221,7 @@ class ConversationView(generics.ListAPIView):
         user = self.request.user
         other_user_id = self.kwargs.get('user_id')
         
-        # Messages entre l'utilisateur connecté et l'autre utilisateur
+        # Messages entre l'utilisateur connecte et l'autre utilisateur
         return Message.objects.filter(
             (models.Q(sender=user) & models.Q(receiver_id=other_user_id)) |
             (models.Q(sender_id=other_user_id) & models.Q(receiver=user))
@@ -236,7 +237,7 @@ class CultureListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.role == 'farmer':
+        if user.role == 'seller':
             return Culture.objects.filter(farmer=user)
         return Culture.objects.all()  # Les acheteurs peuvent voir toutes les cultures
 
@@ -250,7 +251,7 @@ class CultureDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        if user.role == 'farmer':
+        if user.role == 'seller':
             return Culture.objects.filter(farmer=user)
         return Culture.objects.all()
 
@@ -265,12 +266,12 @@ class AgriculturalAdviceListView(generics.ListAPIView):
     def get_queryset(self):
         queryset = AgriculturalAdvice.objects.filter(is_active=True)
         
-        # Filtrer par type de culture si spécifié
+        # Filtrer par type de culture si specifie
         crop_type = self.request.query_params.get('crop_type')
         if crop_type:
             queryset = queryset.filter(crop_type=crop_type)
             
-        # Filtrer par type de conseil si spécifié
+        # Filtrer par type de conseil si specifie
         advice_type = self.request.query_params.get('advice_type')
         if advice_type:
             queryset = queryset.filter(advice_type=advice_type)
@@ -282,4 +283,3 @@ class AgriculturalAdviceDetailView(generics.RetrieveAPIView):
     serializer_class = AgriculturalAdviceSerializer
     permission_classes = [IsAuthenticated]
     queryset = AgriculturalAdvice.objects.filter(is_active=True)
-
