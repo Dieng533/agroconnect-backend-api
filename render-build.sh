@@ -1,16 +1,19 @@
 #!/bin/bash
 
+set -e  # Arrêter le script si une commande échoue
+
+echo "🚀 Starting build process..."
+
 # Installation des dépendances
+echo "📦 Installing requirements..."
 pip install -r requirements.txt
 
 # Appliquer les migrations
-python manage.py makemigrations
+echo "🗄️ Running migrations..."
 python manage.py migrate
 
 # Collecter les fichiers statiques
+echo "📁 Collecting static files..."
 python manage.py collectstatic --noinput
 
-# Créer un superutilisateur si nécessaire (optionnel)
-# python manage.py shell < create_superuser.py
-
-echo "Build completed successfully!"
+echo "✅ Build completed successfully!"
