@@ -1,29 +1,34 @@
-from django.urls import path
-from .views import (
-    ProductListCreateView, ProductDetailView, OrderListCreateView, OrderDetailView,
-    BulkOrderCreateView, CartListView, CartDetailView, CartClearView, FarmerListView,
-    MessageListView, MessageDetailView, ConversationView,
-    CultureListCreateView, CultureDetailView,
-    AgriculturalAdviceListView, AgriculturalAdviceDetailView
-)
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from . import views
+from . import admin_views
+from django.contrib.auth import views as auth_views
+
+router = DefaultRouter()
+router.register(r'products', views.ProductViewSet)
+router.register(r'farmers', views.FarmerViewSet)
+router.register(r'orders', views.OrderViewSet)
+router.register(r'cart', views.CartViewSet)
+router.register(r'messages', views.MessageViewSet)
+router.register(r'cultures', views.CultureViewSet)
+router.register(r'advice', views.AgriculturalAdviceViewSet, basename='agricultural-advice')
 
 urlpatterns = [
-    # Products
-    path('products/', ProductListCreateView.as_view(), name='product-list-create'),
-    path('products/<int:pk>/', ProductDetailView.as_view(), name='product-detail'),
-
-    # Orders
-    path('orders/', OrderListCreateView.as_view(), name='order-list-create'),
-    path('orders/<int:pk>/', OrderDetailView.as_view(), name='order-detail'),
-    path('orders/bulk/', BulkOrderCreateView.as_view(), name='bulk-order-create'),
-
-    # Cart
-    path('cart/', CartListView.as_view(), name='cart-list-create'),
-    path('cart/<int:pk>/', CartDetailView.as_view(), name='cart-detail'),
-    path('cart/clear/', CartClearView.as_view(), name='cart-clear'),
-
-    # Farmers
-    path('farmers/', FarmerListView.as_view(), name='farmer-list'),
+    path('api/', include(router.urls)),
+    path('api/products/<int:product_id>/', views.ProductDetailView.as_view()),
+    path('api/farmers/<int:farmer_id>/', views.FarmerDetailView.as_view()),
+    path('api/orders/<int:order_id>/', views.OrderDetailView.as_view()),
+    path('api/messages/<int:message_id>/', views.MessageDetailView.as_view()),
+    path('api/cultures/<int:culture_id>/', views.CultureDetailView.as_view()),
+    path('api/advice/<int:advice_id>/', views.AgriculturalAdviceDetailView.as_view()),
+    path('api/advice/create/', views.AgriculturalAdviceCreateView.as_view()),
+    
+    # URLs d'administration personnalisées
+    path('admin/dashboard/', admin_views.admin_dashboard, name='admin_dashboard'),
+    
+    # URLs d'authentification
+    path('admin/login/', auth_views.LoginView.as_view(template_name='admin/login.html'), name='admin_login'),
+    path('admin/logout/', auth_views.LogoutView.as_view(next_page='admin:index'), name='admin_logout'),
 
     # Messages
     path('messages/', MessageListView.as_view(), name='message-list-create'),
@@ -36,5 +41,6 @@ urlpatterns = [
 
     # Agricultural Advice
     path('advice/', AgriculturalAdviceListView.as_view(), name='advice-list'),
+    path('advice/create/', AgriculturalAdviceCreateView.as_view(), name='advice-create'),
     path('advice/<int:pk>/', AgriculturalAdviceDetailView.as_view(), name='advice-detail'),
 ]

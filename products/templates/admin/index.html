@@ -1,0 +1,274 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block content_title %}Tableau de bord{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Statistiques principales -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="dashboard-card">
+            <div class="text-center">
+                <div class="dashboard-icon">
+                    <i class="fas fa-box"></i>
+                </div>
+                <div class="dashboard-number">{{ total_products }}</div>
+                <div class="dashboard-label">Produits</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="dashboard-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <div class="text-center">
+                <div class="dashboard-icon">
+                    <i class="fas fa-shopping-cart"></i>
+                </div>
+                <div class="dashboard-number">{{ total_orders }}</div>
+                <div class="dashboard-label">Commandes</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="dashboard-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <div class="text-center">
+                <div class="dashboard-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="dashboard-number">{{ total_users }}</div>
+                <div class="dashboard-label">Utilisateurs</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="dashboard-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+            <div class="text-center">
+                <div class="dashboard-icon">
+                    <i class="fas fa-lightbulb"></i>
+                </div>
+                <div class="dashboard-number">{{ total_advice }}</div>
+                <div class="dashboard-label">Conseils</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <!-- Activités récentes -->
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-clock me-2 text-primary"></i>
+                    Activités récentes
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_products %}
+                    <div class="mb-4">
+                        <h6 class="text-primary"><i class="fas fa-box me-2"></i>Nouveaux produits</h6>
+                        <div class="list-group list-group-flush">
+                            {% for product in recent_products %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>{{ product.name }}</strong>
+                                        <small class="text-muted d-block">
+                                            par {{ product.farmer.username }} - {{ product.created_at|date:"d/m/Y H:i" }}
+                                        </small>
+                                    </div>
+                                    <span class="badge bg-primary rounded-pill">{{ product.price }} FCFA</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if recent_orders %}
+                    <div class="mb-4">
+                        <h6 class="text-success"><i class="fas fa-shopping-cart me-2"></i>Nouvelles commandes</h6>
+                        <div class="list-group list-group-flush">
+                            {% for order in recent_orders %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>Commande #{{ order.id }}</strong>
+                                        <small class="text-muted d-block">
+                                            par {{ order.buyer.username }} - {{ order.created_at|date:"d/m/Y H:i" }}
+                                        </small>
+                                    </div>
+                                    <span class="badge bg-success rounded-pill">{{ order.total_amount }} FCFA</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if recent_messages %}
+                    <div>
+                        <h6 class="text-info"><i class="fas fa-envelope me-2"></i>Messages récents</h6>
+                        <div class="list-group list-group-flush">
+                            {% for message in recent_messages %}
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <strong>{{ message.sender.username }} → {{ message.receiver.username }}</strong>
+                                            <small class="text-muted d-block">{{ message.timestamp|date:"d/m/Y H:i" }}</small>
+                                        </div>
+                                        <span class="badge bg-info rounded-pill">Nouveau</span>
+                                    </div>
+                                    <div class="mt-2">
+                                        <small>{{ message.content|truncatewords:10 }}</small>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions rapides -->
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2 text-warning"></i>
+                    Actions rapides
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'admin:products_product_add' %}" class="btn btn-primary w-100">
+                        <i class="fas fa-plus me-2"></i>Ajouter un produit
+                    </a>
+                    <a href="{% url 'admin:products_agriculturaladvice_add' %}" class="btn btn-success w-100">
+                        <i class="fas fa-plus me-2"></i>Ajouter un conseil
+                    </a>
+                    <a href="{% url 'admin:auth_user_add' %}" class="btn btn-info w-100">
+                        <i class="fas fa-user-plus me-2"></i>Ajouter un utilisateur
+                    </a>
+                    <a href="{% url 'admin:products_product_changelist' %}" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-list me-2"></i>Voir tous les produits
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Système -->
+        <div class="card mt-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-cog me-2 text-secondary"></i>
+                    Système
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-database me-2"></i>Base de données</span>
+                        <span class="badge bg-success rounded-pill">Active</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-server me-2"></i>Serveur</span>
+                        <span class="badge bg-success rounded-pill">En ligne</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-shield-alt me-2"></i>Sécurité</span>
+                        <span class="badge bg-warning rounded-pill">À vérifier</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Graphiques -->
+<div class="row mt-4">
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line me-2 text-primary"></i>
+                    Statistiques des ventes
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="salesChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-pie me-2 text-success"></i>
+                    Répartition des produits
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="categoryChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Graphique des ventes
+    const salesCtx = document.getElementById('salesChart').getContext('2d');
+    new Chart(salesCtx, {
+        type: 'line',
+        data: {
+            labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'],
+            datasets: [{
+                label: 'Ventes (FCFA)',
+                data: [1200000, 1900000, 1500000, 2500000, 2200000, 3000000],
+                borderColor: '#1B8E3E',
+                backgroundColor: 'rgba(27, 142, 62, 0.1)',
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            }
+        }
+    });
+
+    // Graphique des catégories
+    const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+    new Chart(categoryCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Céréales', 'Légumes', 'Fruits', 'Tubercules', 'Autres'],
+            datasets: [{
+                data: [30, 25, 20, 15, 10],
+                backgroundColor: [
+                    '#1B8E3E',
+                    '#28a745',
+                    '#ffc107',
+                    '#17a2b8',
+                    '#6c757d'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

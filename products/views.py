@@ -92,22 +92,40 @@ class CartListView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
+        print(f"🛒 Backend: get_queryset pour user {self.request.user}")
         return Cart.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
-        # Ajouter ou mettre a jour un produit dans le panier
-        product = serializer.validated_data['product']
-        quantity = serializer.validated_data.get('quantity', 1)
+        print(f"🛒 Backend: perform_create pour user {self.request.user}")
+        print(f"🛒 Backend: data = {serializer.validated_data}")
         
-        cart_item, created = Cart.objects.get_or_create(
-            user=self.request.user,
-            product=product,
-            defaults={'quantity': quantity}
-        )
-        
-        if not created:
-            cart_item.quantity += quantity
-            cart_item.save()
+        try:
+            # Ajouter ou mettre a jour un produit dans le panier
+            product = serializer.validated_data['product']
+            quantity = serializer.validated_data.get('quantity', 1)
+            
+            print(f"🛒 Backend: product = {product.name}, quantity = {quantity}")
+            
+            cart_item, created = Cart.objects.get_or_create(
+                user=self.request.user,
+                product=product,
+                defaults={'quantity': quantity}
+            )
+            
+            if not created:
+                cart_item.quantity += quantity
+                cart_item.save()
+                print(f"🛒 Backend: cart_item mis à jour, nouvelle quantité: {cart_item.quantity}")
+            else:
+                print(f"🛒 Backend: cart_item créé avec quantité: {cart_item.quantity}")
+                
+            # Vérifier le panier après ajout
+            cart_count = Cart.objects.filter(user=self.request.user).count()
+            print(f"🛒 Backend: nombre d'articles dans panier: {cart_count}")
+            
+        except Exception as e:
+            print(f"🛒 Backend: ERREUR dans perform_create: {e}")
+            raise
 
     def get_serializer_context(self):
         return {'request': self.request}
@@ -161,8 +179,18 @@ class BulkOrderCreateView(generics.CreateAPIView):
             except Product.DoesNotExist:
                 continue
         
-        # Vider le panier apres commande
+        # Vider le panier après commande
         Cart.objects.filter(user=request.user).delete()
+        
+        # Envoyer les notifications aux farmers
+        for order in orders:
+            if hasattr(order, 'product') and hasattr(order.product, 'farmer'):
+                try:
+                    from .consumers import create_order_notification
+                    import asyncio
+                    asyncio.run(create_order_notification(order))
+                except Exception as e:
+                    print(f"Erreur notification: {e}")
         
         serializer = OrderSerializer(orders, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -196,10 +224,6 @@ class MessageListView(generics.ListCreateAPIView):
         return Message.objects.filter(
             models.Q(sender=user) | models.Q(receiver=user)
         ).distinct()
-
-    def perform_create(self, serializer):
-        # L'expediteur est automatiquement l'utilisateur connecte
-        serializer.save(sender=self.request.user)
 
 
 class MessageDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -283,3 +307,33 @@ class AgriculturalAdviceDetailView(generics.RetrieveAPIView):
     serializer_class = AgriculturalAdviceSerializer
     permission_classes = [IsAuthenticated]
     queryset = AgriculturalAdvice.objects.filter(is_active=True)
+
+
+class AgriculturalAdviceCreateView(generics.CreateAPIView):
+    serializer_class = AgriculturalAdviceSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save()
+
+
+# =====================================
+# USER PROFILE
+# =====================================
+class UserProfileView(generics.RetrieveUpdateAPIView):
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user
+
+    def update(self, request, *args, **kwargs):
+        user = self.get_object()
+        if 'username' in request.data:
+            user.username = request.data['username']
+        if 'email' in request.data:
+            user.email = request.data['email']
+        user.save()
+        
+        serializer = UserSerializer(user)
+        return Response(serializer.data)

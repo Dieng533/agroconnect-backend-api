@@ -1,4 +1,6 @@
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, status
+from rest_framework.response import Response
+from rest_framework_simplejwt.views import TokenObtainPairView
 from .serializers import RegisterSerializer, UserProfileSerializer
 from .models import User
 
@@ -22,3 +24,15 @@ class ProfileView(generics.RetrieveAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    def post(self, request, *args, **kwargs):
+        try:
+            response = super().post(request, *args, **kwargs)
+            return response
+        except Exception as e:
+            return Response(
+                {'detail': 'Email ou mot de passe incorrect'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )

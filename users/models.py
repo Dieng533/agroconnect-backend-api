@@ -26,6 +26,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     email = models.EmailField(unique=True)
     username = models.CharField(max_length=150, blank=True)
+    phone = models.CharField(max_length=20, blank=True, null=True, help_text="Numéro de téléphone")
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='buyer')
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
@@ -36,4 +37,4 @@ class User(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = []
 
     def __str__(self):
-        return self.email
+        return f"{self.username or self.email} ({self.role})"

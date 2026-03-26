@@ -49,7 +49,12 @@ class CartSerializer(serializers.ModelSerializer):
 # =====================================
 class OrderSerializer(serializers.ModelSerializer):
     buyer = serializers.StringRelatedField(read_only=True)
-    product = ProductSerializer(read_only=True)
+    buyer_phone = serializers.CharField(source='buyer.phone', read_only=True)
+    buyer_id = serializers.IntegerField(source='buyer.id', read_only=True)
+    product_name = serializers.CharField(source='product.name', read_only=True)
+    product_price = serializers.DecimalField(source='product.price', read_only=True, max_digits=10, decimal_places=2)
+    product_image = serializers.SerializerMethodField()
+    total = serializers.SerializerMethodField()
 
     product_id = serializers.PrimaryKeyRelatedField(
         queryset=Product.objects.all(),
@@ -61,13 +66,24 @@ class OrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ['id', 'product', 'product_id', 'quantity', 'buyer', 'status', 'image']
+        fields = ['id', 'product', 'product_id', 'product_name', 'product_price', 'product_image', 'quantity', 'buyer', 'buyer_phone', 'buyer_id', 'status', 'image', 'total']
+
+    def get_product_image(self, obj):
+        request = self.context.get('request')
+        if obj.product and obj.product.image:
+            return request.build_absolute_uri(obj.product.image.url)
+        return None
 
     def get_image(self, obj):
         request = self.context.get('request')
-        if obj.image:
-            return request.build_absolute_uri(obj.image.url)
+        if obj.product and obj.product.image:
+            return request.build_absolute_uri(obj.product.image.url)
         return None
+
+    def get_total(self, obj):
+        if obj.product:
+            return obj.product.price * obj.quantity
+        return 0
 
 
 # =====================================
@@ -76,21 +92,29 @@ class OrderSerializer(serializers.ModelSerializer):
 class MessageSerializer(serializers.ModelSerializer):
     sender = UserSerializer(read_only=True)
     receiver = UserSerializer(read_only=True)
-    sender_id = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(),
-        write_only=True,
-        source='sender'
-    )
-    receiver_id = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(),
-        write_only=True,
-        source='receiver'
-    )
+    receiver_id = serializers.IntegerField(write_only=True)
 
     class Meta:
         model = Message
-        fields = ['id', 'sender', 'receiver', 'sender_id', 'receiver_id', 'content', 'timestamp', 'is_read']
-        read_only_fields = ['timestamp', 'is_read']
+        fields = ['id', 'sender', 'receiver', 'receiver_id', 'content', 'timestamp', 'is_read']
+        read_only_fields = ['timestamp', 'is_read', 'sender']
+
+    def validate_receiver_id(self, value):
+        """Vérifie que le receiver existe et n'est pas soi-même"""
+        if not User.objects.filter(id=value).exists():
+            raise serializers.ValidationError("L'utilisateur destinataire n'existe pas")
+        
+        # Vérifier qu'on ne s'envoie pas de message à soi-même
+        request = self.context.get('request')
+        if request and request.user.id == value:
+            raise serializers.ValidationError("Vous ne pouvez pas vous envoyer de message à vous-même")
+        
+        return value
+
+    def create(self, validated_data):
+        # Le sender est automatiquement l'utilisateur authentifié
+        validated_data['sender'] = self.context['request'].user
+        return super().create(validated_data)
 
 
 # =====================================

@@ -6,6 +6,7 @@ from rest_framework_simplejwt.views import (
 )
 from django.conf import settings
 from django.conf.urls.static import static
+from products import admin_views
 
 # Swagger
 from rest_framework import permissions
@@ -25,6 +26,7 @@ schema_view = get_schema_view(
 urlpatterns = [
     # Admin
     path('admin/', admin.site.urls),
+    path('admin/dashboard/', admin_views.admin_dashboard, name='admin_dashboard'),
 
     # Apps
     path('api/', include('users.urls')),
@@ -38,6 +40,6 @@ urlpatterns = [
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0)),
 ]
 
-# ✅ MEDIA FILES EN MODE DEBUG
+# MEDIA FILES EN MODE DEBUG
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
