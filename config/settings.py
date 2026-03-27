@@ -48,7 +48,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     # 'django_filters',  # Temporairement désactivé pour Python 3.14
-    'drf_yasg',
+    # 'drf_yasg',  # Temporairement désactivé pour Python 3.14
     
     'django.contrib.admin',
     'django.contrib.auth',
