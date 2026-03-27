@@ -25,6 +25,8 @@ if 'DATABASE_URL' in os.environ:
     DATABASES = {
         'default': dj_database_url.parse(os.environ.get('DATABASE_URL'))
     }
+    # Forcer l'utilisation de psycopg2-binary
+    DATABASES['default']['OPTIONS'] = {'options': '-c default_transaction_isolation=serializable'}
 else:
     DATABASES = {
         'default': {
