@@ -15,7 +15,9 @@ class Product(models.Model):
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
     quantity = models.PositiveIntegerField(default=1)
-    image = models.ImageField(upload_to='products/', null=True, blank=True)
+    # Temporairement désactivé pour le déploiement
+    # image = models.ImageField(upload_to='products/', null=True, blank=True)
+    image = models.CharField(max_length=500, null=True, blank=True, help_text="URL de l'image")
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='other')
     location = models.CharField(max_length=255, help_text='Localisation du produit')
     farmer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -25,49 +27,78 @@ class Product(models.Model):
     def __str__(self):
         return self.name
 
+class Order(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'En attente'),
+        ('confirmed', 'Confirmée'),
+        ('processing', 'En traitement'),
+        ('shipped', 'Expédiée'),
+        ('delivered', 'Livrée'),
+        ('cancelled', 'Annulée'),
+    ]
+    
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
+    buyer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default="pending")
+    # Temporairement désactivé pour le déploiement
+    # image = models.ImageField(upload_to='orders/', null=True, blank=True)
+    image = models.CharField(max_length=500, null=True, blank=True, help_text="URL de l'image")
+    order_date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Commande #{self.id} par {self.buyer}"
+
+    @property
+    def total_price(self):
+        return self.product.price * self.quantity
+
 class Cart(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=1)
     created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = ['user', 'product']  # Un produit ne peut apparaître qu'une fois par utilisateur
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.user.email} - {self.product.name} ({self.quantity})"
-
-    @property
-    def total_price(self):
-        return self.product.price * self.quantity
-
-class Order(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    quantity = models.PositiveIntegerField(default=1)
-    buyer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    status = models.CharField(max_length=50, default="pending")
-    image = models.ImageField(upload_to='orders/', null=True, blank=True)
-    order_date = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"Order #{self.id} by {self.buyer}"
-
-    @property
-    def total_price(self):
-        return self.product.price * self.quantity
+        return f"Panier de {self.user} - {self.product.name}"
 
 class Message(models.Model):
     sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='sent_messages')
     receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='received_messages')
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
-    is_read = models.BooleanField(default=False)
-
-    class Meta:
-        ordering = ['-timestamp']
 
     def __str__(self):
-        return f"Message from {self.sender.email} to {self.receiver.email}"
+        return f"Message de {self.sender} à {self.receiver}"
+
+class AgriculturalAdvice(models.Model):
+    ADVICE_TYPE_CHOICES = [
+        ('planting', 'Plantation'),
+        ('fertilization', 'Fertilisation'),
+        ('harvesting', 'Récolte'),
+        ('protection', 'Protection des cultures'),
+        ('irrigation', 'Irrigation'),
+        ('other', 'Autres'),
+    ]
+    CROP_TYPE_CHOICES = [
+        ('cereals', 'Céréales'),
+        ('vegetables', 'Légumes'),
+        ('fruits', 'Fruits'),
+        ('tubers', 'Tubercules'),
+        ('other', 'Autres'),
+    ]
+
+    title = models.CharField(max_length=255)
+    content = models.TextField()
+    advice_type = models.CharField(max_length=20, choices=ADVICE_TYPE_CHOICES, default='other')
+    crop_type = models.CharField(max_length=20, choices=CROP_TYPE_CHOICES, default='other')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.title
 
 class Culture(models.Model):
     CROP_TYPE_CHOICES = [
@@ -89,26 +120,4 @@ class Culture(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.name} - {self.farmer.email}"
-
-class AgriculturalAdvice(models.Model):
-    ADVICE_TYPE_CHOICES = [
-        ('planting', 'Plantation'),
-        ('fertilization', 'Fertilisation'),
-        ('pest_control', 'Lutte antiparasitaire'),
-        ('harvesting', 'Récolte'),
-        ('general', 'Conseils généraux'),
-    ]
-    
-    title = models.CharField(max_length=255)
-    content = models.TextField()
-    advice_type = models.CharField(max_length=20, choices=ADVICE_TYPE_CHOICES, default='general')
-    crop_type = models.CharField(max_length=20, choices=Product.CATEGORY_CHOICES, default='other')
-    created_at = models.DateTimeField(auto_now_add=True)
-    is_active = models.BooleanField(default=True)
-
-    class Meta:
-        ordering = ['-created_at']
-
-    def __str__(self):
-        return self.title
+        return f"{self.name} - {self.farmer.username}"
