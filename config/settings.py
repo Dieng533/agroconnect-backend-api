@@ -47,7 +47,7 @@ else:
 INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
-    'django_filters',
+    # 'django_filters',  # Temporairement désactivé pour Python 3.14
     'drf_yasg',
     
     'django.contrib.admin',
@@ -154,7 +154,7 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.AllowAny',
     ),
     'DEFAULT_FILTER_BACKENDS': (
-        'django_filters.rest_framework.DjangoFilterBackend',
+        # 'django_filters.rest_framework.DjangoFilterBackend',  # Temporairement désactivé pour Python 3.14
     ),
 }
 
