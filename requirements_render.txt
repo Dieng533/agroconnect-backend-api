@@ -1,0 +1,35 @@
+# Django Core
+Django==4.2.7
+djangorestframework==3.14.0
+django-cors-headers==4.3.1
+django-filter==23.2
+python-decouple==3.8
+
+# Database
+psycopg2-binary==2.9.7
+
+# API Documentation
+drf-yasg==1.21.7
+drf-spectacular==0.27.0
+
+# JWT Authentication
+djangorestframework-simplejwt==5.3.0
+
+# Image Processing
+Pillow==10.0.1
+
+# Development
+gunicorn==21.2.0
+whitenoise==6.6.0
+
+# Production
+psycopg2==2.9.7
+
+# Testing
+pytest==7.4.3
+pytest-django==4.7.0
+factory-boy==3.3.0
+
+# Utilities
+python-dotenv==1.0.0
+requests==2.31.0
