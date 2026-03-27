@@ -5,6 +5,7 @@ Django settings for config project.
 from pathlib import Path
 import os
 import dj_database_url
+from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -12,9 +13,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY
 # =========================
 
-SECRET_KEY = os.environ.get('SECRET_KEY', "django-super-secure-key-very-long-2026-agroconnect-production-ready-123456")
-DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
+SECRET_KEY = config('SECRET_KEY', default="django-super-secure-key-very-long-2026-agroconnect-production-ready-123456")
+DEBUG = config('DEBUG', default=False, cast=bool)
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
 
 # =========================
 # DATABASE
@@ -27,8 +28,15 @@ if 'DATABASE_URL' in os.environ:
 else:
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': config('DB_NAME', default='postgres'),
+            'USER': config('DB_USER', default='postgres'),
+            'PASSWORD': config('DB_PASSWORD'),
+            'HOST': config('DB_HOST', default='localhost'),
+            'PORT': config('DB_PORT', default='5432'),
+            'OPTIONS': {
+                'sslmode': 'require',
+            },
         }
     }
 
@@ -154,17 +162,13 @@ REST_FRAMEWORK = {
 # CORS (Flutter Web)
 # =========================
 
-if 'CORS_ALLOWED_ORIGINS' in os.environ:
-    CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',')
-else:
-    CORS_ALLOWED_ORIGINS = [
-        'http://localhost:3000',
-        'http://127.0.0.1:3000',
-        'https://agroconnect-gold.vercel.app'
-    ]
+CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', 
+    default='http://localhost:3000,http://127.0.0.1:3000,https://agroconnect-gold.vercel.app',
+    cast=lambda v: [s.strip() for s in v.split(',')]
+)
 
-CORS_ALLOW_CREDENTIALS = os.environ.get('CORS_ALLOW_CREDENTIALS', 'True').lower() == 'true'
-CORS_ALLOW_ALL_ORIGINS = os.environ.get('CORS_ALLOW_ALL_ORIGINS', 'True').lower() == 'true'
+CORS_ALLOW_CREDENTIALS = config('CORS_ALLOW_CREDENTIALS', default=True, cast=bool)
+CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=False, cast=bool)
 
 # =========================
 # JWT SETTINGS

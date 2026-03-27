@@ -1,0 +1,30 @@
+services:
+  # Service API Django
+  - type: web
+    name: agroconnect-backend
+    env: python
+    repo: https://github.com/agroconnect/agroconnect-backend.git  # À remplacer par votre repo
+    rootDir: /
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 3
+    envVars:
+      - key: DATABASE_URL
+        value: postgresql://postgres:AGOCONECT@12345678@db.ugbmqxlrgwxihlgmcuuj.supabase.co:5432/postgres
+      - key: SECRET_KEY
+        value: django-insecure-agroconnect-production-key-2024-change-this-in-production
+      - key: DEBUG
+        value: false
+      - key: ALLOWED_HOSTS
+        value: agroconnect-backend.onrender.com,www.agroconnect-backend.onrender.com
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://agroconnect-backend.onrender.com,https://agroconnect-gold.vercel.app
+      - key: CORS_ALLOW_CREDENTIALS
+        value: true
+      - key: CORS_ALLOW_ALL_ORIGINS
+        value: false
+      - key: SUPABASE_URL
+        value: https://ugbmqxlrgwxihlgmcuuj.supabase.co
+      - key: SUPABASE_ANON_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnYm1xeGxyZ3d4aWhsZ21jdXVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2MDE4NDYsImV4cCI6MjA5MDE3Nzg0Nn0.EHZOjfLw67jx9OsqUfv-leqTW06V40_K5btFEHfeOF0
+      - key: SUPABASE_SERVICE_KEY
+        value: sb_publishable_oVGHcXWF0fjgormVxfPyWw_ci3ysgk3
