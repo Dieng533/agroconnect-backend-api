@@ -15,8 +15,7 @@ class Product(models.Model):
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
     quantity = models.PositiveIntegerField(default=1)
-    # Temporairement désactivé pour le déploiement
-    # image = models.ImageField(upload_to='products/', null=True, blank=True)
+    # Temporairement désactivé pour éviter Pillow
     image = models.CharField(max_length=500, null=True, blank=True, help_text="URL de l'image")
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='other')
     location = models.CharField(max_length=255, help_text='Localisation du produit')
@@ -41,8 +40,7 @@ class Order(models.Model):
     quantity = models.PositiveIntegerField(default=1)
     buyer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default="pending")
-    # Temporairement désactivé pour le déploiement
-    # image = models.ImageField(upload_to='orders/', null=True, blank=True)
+    # Temporairement désactivé pour éviter Pillow
     image = models.CharField(max_length=500, null=True, blank=True, help_text="URL de l'image")
     order_date = models.DateTimeField(auto_now_add=True)
 
